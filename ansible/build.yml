@@ -1,0 +1,25 @@
+---
+- name: Install virtualenv
+  pip:
+    name: virtualenv
+    extra_args: --user
+- name: Setup the requirements
+  pip:
+    requirements: "{{ playbook_dir }}/../requirements.txt"
+    virtualenv: "{{ playbook_dir }}/roles/venv"
+    virtualenv_command: ~/.local/bin/virtualenv
+    extra_args: --upgrade
+- name: Run the pyinstaller
+  shell: |
+    source {{ playbook_dir }}/roles/venv/bin/activate
+    {{ playbook_dir }}/roles/venv/bin/pyinstaller -F ga-campaign-donations.py
+  args:
+    chdir: "{{ playbook_dir }}/../"
+- name: Build ga-campaign-donations RPM
+  shell: "/usr/local/bin/fpm -s dir -t rpm -n {{ 'ga-campaign-donations' | quote }} -v {{ ga_campaign_donations_ver | quote }} --iteration {{ package_revision | quote }} --description {{ 'ga-campaign-donations' | quote }} --vendor {{ 'PODS' | quote }} --config-files /usr/local/etc/ga-campaign-donations/ga-campaign-donations.yml {{ playbook_dir }}/files/ga-campaign-donations.yml=/usr/local/etc/ga-campaign-donations/ga-campaign-donations.yml ./ga-campaign-donations=/usr/local/bin/ga-campaign-donations"
+  args:
+      chdir: "{{ playbook_dir }}/../dist"
+- name: Build ga-campaign-donations DEB
+  shell: "/usr/local/bin/fpm -s dir -t deb -n {{ 'ga-campaign-donations' | quote }} -v {{ ga_campaign_donations_ver | quote }} --iteration {{ package_revision | quote }} --description {{ 'ga-campaign-donations' | quote }} --vendor {{ 'PODS' | quote }} --config-files /usr/local/etc/ga-campaign-donations/ga-campaign-donations.yml {{ playbook_dir }}/files/ga-campaign-donations.yml=/usr/local/etc/ga-campaign-donations/ga-campaign-donations.yml ./ga-campaign-donations=/usr/local/bin/ga-campaign-donations"
+  args:
+      chdir: "{{ playbook_dir }}/../dist"

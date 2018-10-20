@@ -1,0 +1,3 @@
+pyinstaller
+netifaces
+pyyaml

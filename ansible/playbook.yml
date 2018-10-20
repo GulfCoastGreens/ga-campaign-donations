@@ -1,0 +1,10 @@
+- hosts: "{{ target_hosts }}"
+  vars_files:
+    - ./vars/main.yml
+  tasks:
+    - import_tasks: build.yml
+      tags:
+        - build
+    - import_tasks: deploy.yml
+      tags:
+        - deploy

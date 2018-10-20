@@ -1,0 +1,69 @@
+---
+- name: create temporary package directory
+  tempfile:
+    state: directory
+    suffix: build
+  register: ga_campaign_donations_folder
+- name: Copy package to remote host
+  copy:
+    src: "{{ item }}"
+    dest: "{{ ga_campaign_donations_folder.path }}"
+  with_fileglob:
+    - "../dist/ga-campaign-donations*.deb"
+  when: ansible_os_family == "Debian"
+  tags:
+    - deploy
+- name: Copy package to remote host
+  copy:
+    src: "{{ item }}"
+    dest: "{{ ga_campaign_donations_folder.path }}"
+  with_fileglob:
+    - "../dist/ga-campaign-donations*.rpm"
+  when: ansible_os_family == "RedHat"
+  tags:
+    - deploy  
+- name: Find the ga-campaign-donations package that was produced
+  find:
+    paths: "{{ ga_campaign_donations_folder.path }}"
+    patterns: "ga-campaign-donations*.deb"
+  register: iffind
+  when: ansible_os_family == "Debian"
+  tags:
+    - deploy
+- name: Install a ga-campaign-donations .deb package
+  apt:
+    deb: "{{ item.path }}"
+  with_items: "{{ iffind.files|default([]) }}"
+  register: rc_result
+  when: ansible_os_family == "Debian"
+  tags:
+    - deploy      
+- name: Find the ga-campaign-donations package that was produced
+  find:
+    paths: "{{ ga_campaign_donations_folder.path }}"
+    patterns: "ga-campaign-donations*.rpm"
+  register: iffind
+  when: ansible_os_family == "RedHat"
+  tags:
+    - deploy
+- name: Install a ga-campaign-donations .rpm package
+  yum:
+    name: "{{ item.path }}"
+  with_items: "{{ iffind.files|default([]) }}"
+  register: rc_result
+  when: ansible_os_family == "RedHat"
+  tags:
+    - deploy    
+- name: Update the config for the env
+  template:
+    src: "{{ playbook_dir }}/templates/ga-campaign-donations.yml.j2"
+    dest: "/usr/local/etc/ga-campaign-donations/ga-campaign-donations.yml"
+- name: Create cron tasks for ga-campaign-donations
+  cron:
+    name: "ga-campaign-donations Job"
+    job: "/usr/local/bin/ga-campaign-donations"
+    minute: "*/10"
+    user: root
+    cron_file: ga-campaign-donations
+  tags:
+    - deploy    

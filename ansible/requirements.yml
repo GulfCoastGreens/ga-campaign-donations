@@ -1,0 +1,5 @@
+---
+- src: ymdgit:ymd-ansible-inventory.git
+  version: master
+  scm: git
+  name: inventory
